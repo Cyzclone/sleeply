@@ -6,18 +6,32 @@ function roundWhole(value) {
   return Math.round(Number.isFinite(value) ? value : 0);
 }
 
-function getSleepAdjustment(sleepHours) {
+function getSleepAdjustment(sleepHours, naturalHours) {
   if (sleepHours <= 0) return 0;
-  if (sleepHours < 3) return -45;
-  if (sleepHours < 4) return -36;
-  if (sleepHours < 5) return -26;
-  if (sleepHours < 6) return -17;
-  if (sleepHours < 7) return -9;
-  if (sleepHours < 8) return -3;
-  if (sleepHours <= 10) return 6;
+
+  const exactNaturalMatch =
+    Number.isFinite(naturalHours) && Math.abs(sleepHours - naturalHours) < 0.001;
+
+  const referenceHours = clamp(naturalHours || 8, 6, 10);
+  const normalizedRatio = clamp(sleepHours / referenceHours, 0, 1);
+
+  if (sleepHours <= 10) {
+    if (normalizedRatio <= 0.5) {
+      const lowEndPenalty =
+        14 + 28 * (Math.pow(0.5 / Math.max(normalizedRatio, 0.01), 0.4) - 1);
+
+      return -Math.round(clamp(lowEndPenalty, 14, 60));
+    }
+
+    const midRangeProgress = clamp((normalizedRatio - 0.5) / 0.5, 0, 1);
+    const curvedAdjustment = -14 + 20 * Math.pow(midRangeProgress, 0.82);
+
+    return Math.round(curvedAdjustment);
+  }
+
   if (sleepHours <= 11) return 4;
   if (sleepHours <= 12) return 1;
-  return -2;
+  return exactNaturalMatch ? 0 : -2;
 }
 
 function getNaturalMatchAdjustment(sleepHours, naturalHours) {
@@ -42,22 +56,22 @@ function getStressAdjustment(stress) {
   if (stress <= 0) return 2;
   if (stress === 1) return 2;
   if (stress === 2) return 1;
-  if (stress === 3) return 1;
+  if (stress === 3) return 0;
   if (stress === 4) return 0;
-  if (stress === 5) return 0;
-  if (stress === 6) return -1;
-  if (stress === 7) return -2;
-  if (stress === 8) return -3;
+  if (stress === 5) return -1;
+  if (stress === 6) return -2;
+  if (stress === 7) return -3;
+  if (stress === 8) return -4;
   return -4;
 }
 
 function getWakeupAdjustment(wakeups) {
-  if (wakeups <= 0) return 5;
-  if (wakeups === 1) return 2;
-  if (wakeups === 2) return -2;
-  if (wakeups === 3) return -6;
-  if (wakeups === 4) return -10;
-  if (wakeups === 5) return -15;
+  if (wakeups <= 0) return 0;
+  if (wakeups === 1) return -2;
+  if (wakeups === 2) return -5;
+  if (wakeups === 3) return -8;
+  if (wakeups === 4) return -12;
+  if (wakeups === 5) return -16;
   return -20;
 }
 
@@ -80,9 +94,29 @@ function getRoutineAdjustment(routine) {
 }
 
 function getEnvironmentAdjustment(environment) {
-  const environmentQuality = clamp(10 - environment, 0, 10);
+  if (environment <= 0) return 0;
+  if (environment <= 2) return -2;
+  if (environment === 3) return -3;
+  if (environment === 4) return -4;
+  if (environment === 5) return -6;
+  if (environment === 6) return -8;
+  if (environment === 7) return -10;
+  if (environment === 8) return -13;
+  if (environment === 9) return -16;
+  return -20;
+}
 
-  return getPositiveTenScaleAdjustment(environmentQuality);
+function getRemMinutesAdjustment(remMinutes, naturalHours) {
+  const targetRemMinutes = clamp((naturalHours || 8) * 60 * 0.22, 75, 132);
+  const normalizedRatio = clamp(remMinutes / targetRemMinutes, 0, 2);
+
+  if (normalizedRatio <= 1) {
+    return Math.round(-6 + 10 * Math.pow(normalizedRatio, 0.8));
+  }
+
+  if (normalizedRatio <= 1.2) return 4;
+  if (normalizedRatio <= 1.5) return 2;
+  return 0;
 }
 
 function getAlcoholAdjustment(alcohol) {
@@ -164,6 +198,7 @@ function buildNoSleepScoreState() {
     { id: "wakeups", label: "Wake-ups", value: 0 },
     { id: "routine", label: "Routine", value: 0 },
     { id: "environment", label: "Environment", value: 0 },
+    { id: "remMinutes", label: "REM minutes", value: 0 },
     { id: "alcohol", label: "Alcohol", value: 0 },
     { id: "caffeine", label: "Caffeine", value: 0 },
     { id: "cannabis", label: "Cannabis", value: 0 },
@@ -178,6 +213,7 @@ function buildNoSleepScoreState() {
       crossingPenalty: 0,
       environmentAdjustment: 0,
       naturalMatchAdjustment: 0,
+      remMinutesAdjustment: 0,
       routineAdjustment: 0,
       sleepAdjustment: 0,
       stressAdjustment: 0,
@@ -215,6 +251,7 @@ function buildScoreFactors(breakdown) {
     { id: "wakeups", label: "Wake-ups", value: breakdown.wakeupAdjustment },
     { id: "routine", label: "Routine", value: breakdown.routineAdjustment },
     { id: "environment", label: "Environment", value: breakdown.environmentAdjustment },
+    { id: "remMinutes", label: "REM minutes", value: breakdown.remMinutesAdjustment },
     { id: "alcohol", label: "Alcohol", value: breakdown.alcoholAdjustment },
     { id: "caffeine", label: "Caffeine", value: breakdown.caffeineAdjustment },
     { id: "cannabis", label: "Cannabis", value: breakdown.cannabisAdjustment },
@@ -231,7 +268,7 @@ function buildScoreFactors(breakdown) {
   return scoreFactors;
 }
 
-export function computeScoreMetrics({ normalized }) {
+export function computeScoreMetrics({ normalized, timeline }) {
   const sleepHours = Number(normalized?.raw?.durationHours ?? 0);
   const naturalHours = Number(normalized?.raw?.naturalDurationHours ?? 0);
 
@@ -246,6 +283,12 @@ export function computeScoreMetrics({ normalized }) {
   const alcohol = clamp(roundWhole(normalized?.raw?.alcohol ?? 0), 0, 10);
   const caffeine = clamp(roundWhole(normalized?.raw?.caffeine ?? 0), 0, 10);
   const cannabis = clamp(roundWhole(normalized?.raw?.weed ?? 0), 0, 10);
+  const remMinutes = Math.max(
+    0,
+    Math.round(
+      (timeline?.totalSleepMinutes ?? sleepHours * 60) * (timeline?.stageDurationTargets?.rem ?? 0.22),
+    ),
+  );
 
   const breakdown = {
     alcoholAdjustment: getAlcoholAdjustment(alcohol),
@@ -255,8 +298,9 @@ export function computeScoreMetrics({ normalized }) {
     crossingPenalty: 0,
     environmentAdjustment: getEnvironmentAdjustment(environment),
     naturalMatchAdjustment: getNaturalMatchAdjustment(sleepHours, naturalHours),
+    remMinutesAdjustment: getRemMinutesAdjustment(remMinutes, naturalHours),
     routineAdjustment: getRoutineAdjustment(routine),
-    sleepAdjustment: getSleepAdjustment(sleepHours),
+    sleepAdjustment: getSleepAdjustment(sleepHours, naturalHours),
     stressAdjustment: getStressAdjustment(stress),
     wakeupAdjustment: getWakeupAdjustment(wakeups),
   };
@@ -278,6 +322,7 @@ export function computeScoreMetrics({ normalized }) {
     breakdown.wakeupAdjustment +
     breakdown.routineAdjustment +
     breakdown.environmentAdjustment +
+    breakdown.remMinutesAdjustment +
     breakdown.alcoholAdjustment +
     breakdown.caffeineAdjustment +
     breakdown.cannabisAdjustment +
@@ -321,7 +366,10 @@ export function computeScoreMetrics({ normalized }) {
   return {
     breakdown,
     componentScores: {
-      architecture: breakdown.routineAdjustment + breakdown.environmentAdjustment,
+      architecture:
+        breakdown.routineAdjustment +
+        breakdown.environmentAdjustment +
+        breakdown.remMinutesAdjustment,
       duration: breakdown.sleepAdjustment + breakdown.naturalMatchAdjustment,
       efficiency: breakdown.wakeupAdjustment,
       modifiers:

@@ -131,6 +131,22 @@ export default function DashboardPage({
   const [awakePromptState, setAwakePromptState] = useState(null);
   const uploadInputRef = useRef(null);
 
+  function continueProfileLoad(profileId) {
+    const activeProfile = profiles.find((profile) => profile.id === profileId);
+    const plannedSleepHours = activeProfile?.answers?.plannedSleepHours?.value ?? 0;
+
+    if (plannedSleepHours <= 0) {
+      setAwakePromptState({
+        hoursDraft: "1",
+        profileId,
+        profileName: activeProfile?.name ?? "This profile",
+      });
+      return;
+    }
+
+    onLoadProfile(profileId);
+  }
+
   function handleCreateProfile() {
     setProfileNameDraft("");
     setScreen("name");
@@ -200,19 +216,7 @@ export default function DashboardPage({
       return;
     }
 
-    const activeProfile = profiles.find((profile) => profile.id === activeProfileId);
-    const plannedSleepHours = activeProfile?.answers?.plannedSleepHours?.value ?? 0;
-
-    if (plannedSleepHours <= 0) {
-      setAwakePromptState({
-        hoursDraft: "1",
-        profileId: activeProfileId,
-        profileName: activeProfile?.name ?? "This profile",
-      });
-      return;
-    }
-
-    onLoadProfile(activeProfileId);
+    continueProfileLoad(activeProfileId);
   }
 
   function handleConfirmAwakePrompt() {
@@ -482,7 +486,7 @@ export default function DashboardPage({
               </button>
             </>
           }
-          message={`Delete profile "${deleteTarget.name}"?`}
+          message={`Are you sure?`}
           onClose={() => setDeleteTarget(null)}
           wide
         />

@@ -42,6 +42,8 @@ const IMPROVEMENT_COPY = {
     "Multiple drug effects stacked together here, so reducing them together would likely help the most.",
   naturalSleepNeed:
     "Bringing your actual sleep closer to your natural sleep need would likely improve recovery the most.",
+  remMinutes:
+    "More healthy REM time across the night would likely improve emotional and cognitive restoration.",
   sleepHours:
     "Adding more sleep time closer to the 8 to 10 hour range would likely improve the whole night the most.",
   environment:

@@ -5,7 +5,6 @@ import MainPanel from "./MainPanel";
 export default function AppLayout({
   children,
   mode = "dashboard",
-  onOpenProjectDocument,
   onOpenProjectInfo,
   onOpenSettings,
   onSetTheme,
@@ -15,7 +14,6 @@ export default function AppLayout({
     <div className={`sl-app-shell sl-app-shell--${mode}`.trim()}>
       <Topbar
         mode={mode}
-        onOpenProjectDocument={onOpenProjectDocument}
         onOpenProjectInfo={onOpenProjectInfo}
         onOpenSettings={onOpenSettings}
         onSetTheme={onSetTheme}

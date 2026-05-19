@@ -971,7 +971,7 @@ select:focus-visible,
 }
 
 .sl-dashboard-message-panel--wide {
-  width: min(100%, 420px);
+  width: min(100%, 468px);
 }
 
 .sl-dashboard-message-panel .sl-card__body {
@@ -1000,6 +1000,21 @@ select:focus-visible,
   color: var(--text);
   line-height: 1.3;
   white-space: nowrap;
+}
+
+.sl-dashboard-message-panel--wide .sl-dashboard-message-panel__body {
+  display: grid;
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 14px;
+}
+
+.sl-dashboard-message-panel--wide .sl-dashboard-message-panel__text {
+  white-space: normal;
+}
+
+.sl-dashboard-message-panel--wide .sl-dashboard-message-panel__actions {
+  justify-content: flex-start;
 }
 
 .sl-dashboard-message-panel__text--wrap {

@@ -100,6 +100,7 @@ export default function AnalysisPage({
   questions,
 }) {
   const [expandedPanel, setExpandedPanel] = useState("");
+  const [hasCalculatedSleepScore, setHasCalculatedSleepScore] = useState(false);
   const [showSleepSummary, setShowSleepSummary] = useState(false);
   const [showProjectInfo, setShowProjectInfo] = useState(false);
   const [tutorialActive, setTutorialActive] = useState(false);
@@ -520,6 +521,8 @@ export default function AnalysisPage({
   }
 
   function handleTutorialCalculateScore() {
+    setHasCalculatedSleepScore(true);
+
     if (tutorialActive && currentTutorialStep?.id === "calculate-score") {
       markTutorialStepComplete("calculate-score");
     }
@@ -621,6 +624,7 @@ export default function AnalysisPage({
                 calculateButtonRef={scoreButtonRef}
                 factors={sleepState.score.scoreFactors}
                 onCalculate={handleTutorialCalculateScore}
+                persistedOpen={hasCalculatedSleepScore}
                 score={sleepState.score.overallSleepScore}
               />
             </section>

@@ -8,7 +8,7 @@ function formatSignedScore(value) {
   return `${value}`;
 }
 
-const MAX_FACTORS = 10;
+const MAX_FACTORS = 11;
 const EDGE_INSET = 14;
 const TOP_INSET = 12;
 const RIGHT_TOP_INSET = 20;
@@ -259,13 +259,21 @@ function resolveFactorPositions({ factorMeasurements, orbitRect, placementProfil
   };
 }
 
-export default function SleepScoreCard({ calculateButtonRef, factors = [], onCalculate, score }) {
+export default function SleepScoreCard({
+  calculateButtonRef,
+  factors = [],
+  onCalculate,
+  persistedOpen = false,
+  score,
+}) {
   const orbitRef = useRef(null);
   const ringRef = useRef(null);
   const factorRefs = useRef({});
   const [factorPositions, setFactorPositions] = useState({});
-  const [displayScore, setDisplayScore] = useState(0);
-  const [revealState, setRevealState] = useState("idle");
+  const initiallyPersistedOpenRef = useRef(persistedOpen);
+  const skipPersistSyncRef = useRef(false);
+  const [displayScore, setDisplayScore] = useState(() => (persistedOpen ? score : 0));
+  const [revealState, setRevealState] = useState(() => (persistedOpen ? "revealed" : "idle"));
   const placementProfile = useMemo(() => buildPlacementProfile(factors), [factors]);
   const factorSignature = useMemo(
     () => `${score}:${factors.map((factor) => `${factor.id}:${factor.value}`).join("|")}`,
@@ -273,13 +281,27 @@ export default function SleepScoreCard({ calculateButtonRef, factors = [], onCal
   );
 
   useEffect(() => {
+    if (
+      (initiallyPersistedOpenRef.current && persistedOpen) ||
+      (persistedOpen && skipPersistSyncRef.current)
+    ) {
+      skipPersistSyncRef.current = false;
+      return undefined;
+    }
+
     const frameId = window.requestAnimationFrame(() => {
+      if (persistedOpen) {
+        setRevealState("revealed");
+        setDisplayScore(score);
+        return;
+      }
+
       setRevealState("idle");
       setDisplayScore(0);
     });
 
     return () => window.cancelAnimationFrame(frameId);
-  }, [factorSignature]);
+  }, [factorSignature, persistedOpen, score]);
 
   useEffect(() => {
     if (revealState !== "animating") {
@@ -323,6 +345,7 @@ export default function SleepScoreCard({ calculateButtonRef, factors = [], onCal
       return;
     }
 
+    skipPersistSyncRef.current = true;
     setRevealState("animating");
     onCalculate?.();
   }

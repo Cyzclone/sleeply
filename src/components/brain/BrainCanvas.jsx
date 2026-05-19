@@ -4,6 +4,8 @@ import { Center, OrbitControls } from "@react-three/drei";
 import BrainModel from "./BrainModel";
 import PulseLayer from "./PulseLayer";
 
+const ZOOM_SYNC_EPSILON = 0.01;
+
 function BrainScene({
   currentStage,
   debugAnchors,
@@ -17,6 +19,8 @@ function BrainScene({
 }) {
   const [anchors, setAnchors] = useState([]);
   const controlsRef = useRef(null);
+  const isSyncingZoomRef = useRef(false);
+  const zoomFrameRef = useRef(0);
   const { camera } = useThree();
 
   const lighting = useMemo(() => {
@@ -36,9 +40,28 @@ function BrainScene({
   }, [visualState]);
 
   useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls) {
+      return;
+    }
+
+    const currentDistance = controls.getDistance();
+
+    if (Math.abs(currentDistance - zoomDistance) < ZOOM_SYNC_EPSILON) {
+      return;
+    }
+
+    isSyncingZoomRef.current = true;
     camera.position.setLength(zoomDistance);
+    camera.updateProjectionMatrix();
     controlsRef.current?.update();
   }, [camera, zoomDistance]);
+
+  useEffect(() => () => {
+    if (zoomFrameRef.current) {
+      window.cancelAnimationFrame(zoomFrameRef.current);
+    }
+  }, []);
 
   useEffect(() => {
     if (!rotationRequest || !controlsRef.current) {
@@ -51,8 +74,20 @@ function BrainScene({
   }, [rotationRequest]);
 
   function handleControlsChange() {
-    const nextDistance = camera.position.length();
-    onZoomChange(Math.min(zoomRange.max, Math.max(zoomRange.min, nextDistance)));
+    if (isSyncingZoomRef.current) {
+      isSyncingZoomRef.current = false;
+      return;
+    }
+
+    if (zoomFrameRef.current) {
+      window.cancelAnimationFrame(zoomFrameRef.current);
+    }
+
+    zoomFrameRef.current = window.requestAnimationFrame(() => {
+      const nextDistance = controlsRef.current?.getDistance?.() ?? camera.position.length();
+      onZoomChange(Math.min(zoomRange.max, Math.max(zoomRange.min, nextDistance)));
+      zoomFrameRef.current = 0;
+    });
   }
 
   return (
@@ -75,6 +110,8 @@ function BrainScene({
         />
       </Suspense>
       <OrbitControls
+        enableDamping
+        dampingFactor={0.08}
         enablePan={false}
         maxDistance={zoomRange.max}
         minDistance={zoomRange.min}

@@ -1,8 +1,7 @@
-import { FileText, Info, Moon, Settings, SunMedium } from "lucide-react";
+import { Info, Moon, Settings, SunMedium } from "lucide-react";
 
 export default function Topbar({
   mode = "dashboard",
-  onOpenProjectDocument,
   onOpenProjectInfo,
   onOpenSettings,
   onSetTheme,
@@ -22,14 +21,6 @@ export default function Topbar({
           type="button"
         >
           <Info aria-hidden="true" size={30} strokeWidth={2.1} />
-        </button>
-        <button
-          aria-label="Project document"
-          className="sl-icon-control sl-icon-control--topbar"
-          onClick={onOpenProjectDocument}
-          type="button"
-        >
-          <FileText aria-hidden="true" size={30} strokeWidth={2.1} />
         </button>
       </div>
       <div className="sl-topbar__side sl-topbar__side--right">

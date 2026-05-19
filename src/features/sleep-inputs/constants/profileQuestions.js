@@ -22,7 +22,7 @@ export const PROFILE_QUESTIONS = [
   },
   {
     id: "stressLevel",
-    label: "How stressed are you tonight? (1-10)",
+    label: "How stressed are you? (1-10)",
     min: 0,
     max: 10,
     step: 1,
@@ -50,14 +50,14 @@ export const PROFILE_QUESTIONS = [
   },
   {
     id: "alcoholLevel",
-    label: "How much alcohol have you had to drink? (1-10)",
+    label: "How much alcohol is in your system? (1-10)",
     min: 0,
     max: 10,
     step: 1,
   },
   {
     id: "caffeineLevel",
-    label: "How much caffeine is still in your system? (1-10)",
+    label: "How much caffeine is in your system? (1-10)",
     min: 0,
     max: 10,
     step: 1,

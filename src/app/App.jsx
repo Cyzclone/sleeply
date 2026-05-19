@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import AppLayout from "../components/layout/AppLayout";
-import ProjectDocumentPanel from "../components/layout/ProjectDocumentPanel";
 import ProjectInfoPanel from "../components/layout/ProjectInfoPanel";
 import SettingsPanel from "../components/layout/SettingsPanel";
 import { getCursorById } from "../config/cursors";
@@ -20,7 +19,6 @@ export default function App() {
     awakeOnlyMinutes: null,
     profileId: "",
   });
-  const [isProjectDocumentOpen, setIsProjectDocumentOpen] = useState(false);
   const [isProjectInfoOpen, setIsProjectInfoOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { settings, updateSetting } = useAppSettings();
@@ -158,7 +156,6 @@ export default function App() {
     <div className="sl-app">
       <AppLayout
         mode={loadedProfile ? "analysis" : "dashboard"}
-        onOpenProjectDocument={() => setIsProjectDocumentOpen(true)}
         onOpenProjectInfo={() => setIsProjectInfoOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onSetTheme={setTheme}
@@ -192,9 +189,6 @@ export default function App() {
           settings={settings}
           updateSetting={updateSetting}
         />
-      )}
-      {isProjectDocumentOpen && (
-        <ProjectDocumentPanel onClose={() => setIsProjectDocumentOpen(false)} />
       )}
       {isProjectInfoOpen && (
         <ProjectInfoPanel onClose={() => setIsProjectInfoOpen(false)} />
